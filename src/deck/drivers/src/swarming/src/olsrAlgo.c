@@ -618,6 +618,220 @@ void coverTwoHopNeighbors(olsrAddr_t addr, olsrTwoHopNeighborSet_t *twoHopNeighb
       n2NeedToEraseIt = twoHopNeighborSet->setData[n2NeedToEraseIt].next;
     }  
 }
+#ifdef EFF_BROADCASTING
+typedef struct{
+  uint32_t val;
+  olsrAddr_t addr;
+}contriNode;
+//change logbase
+float log_base(float base,float num){
+  return log(num)/log(base);
+}
+bool find(olsrAddr_t *nums,olsrAddr_t t,int len){
+  for(int i=0;i<len;++i){
+    if(nums[i]==t)
+      return true;
+  }
+  return false;
+}
+int findIndex(olsrAddr_t * map,olsrAddr_t t,int len ){
+  for(int i=0;i<len;++i){
+    if(map[i]==t)
+      return i;
+  }
+  return -1;
+}
+void sort(contriNode * nodes,int ol, int rr){
+  int l=ol;
+  int r=rr;
+  if(l>=r)
+    return;
+  contriNode temp = nodes[ol];
+  while(l<r){
+    while(nodes[r].val>=temp.val&&r>l) r--;
+    while(nodes[l].val<=temp.val&&r>l) l++;
+    contriNode cur = nodes[r];
+    nodes[r] = nodes[l];
+    nodes[l] = cur;
+  }
+  contriNode cur = nodes[ol];
+  nodes[ol]=nodes[l];
+  nodes[l]=cur;
+  sort(nodes,ol,l-1);
+  sort(nodes,l+1,rr);
+}
+
+
+void mprCompute(){
+  olsrMprSetInit(&olsrMprSet);
+  olsrNeighborSet_t N;
+  olsrNeighborSetInit(&N);
+  //generate 1 hop neighbor
+  setIndex_t itForOlsrNeighborSet  = olsrNeighborSet.fullQueueEntry;
+  while(itForOlsrNeighborSet!=-1){
+    if(olsrNeighborSet.setData[itForOlsrNeighborSet].data.m_status == STATUS_SYM){
+      olsrInsertToNeighborSet(&N,&olsrNeighborSet.setData[itForOlsrNeighborSet].data);
+    }
+    itForOlsrNeighborSet = olsrNeighborSet.setData[itForOlsrNeighborSet].next;
+  }
+  //generate for n2 neighbor,consider triangle case
+  olsrTwoHopNeighborSet_t N2;
+  olsrTwoHopNeighborSetInit(&N2);
+  setIndex_t itForTwoHopNeighborSet = olsrTwoHopNeighborSet.fullQueueEntry;
+  while(itForOlsrNeighborSet != -1){
+    olsrTwoHopNeighborSetItem_t twoHopNTuple = olsrTwoHopNeighborSet.setData[itForTwoHopNeighborSet];
+    //self can not consider as self
+    if(twoHopNTuple.data.m_twoHopNeighborAddr == myAddress)
+      {
+        itForTwoHopNeighborSet = twoHopNTuple.next;
+        continue;
+      }
+    bool ok = false;
+    setIndex_t itForN = N.fullQueueEntry;
+    while(itForN != -1)
+      {
+        if(N.setData[itForN].data.m_neighborAddr == twoHopNTuple.data.m_neighborAddr)
+          {
+            // N.setData[itForN].data.m_willingness == WILL_NEVER? ok=false: ok=true;
+            ok = true;
+            break;
+          }
+        itForN = N.setData[itForN].next;
+      }
+    if(!ok)
+      {
+        itForTwoHopNeighborSet = twoHopNTuple.next;
+        DEBUG_PRINT_OLSR_MPR("464 continue\n");
+        continue;
+      }
+    //this two hop neighbor can not be one hop neighbor
+    itForN = N.fullQueueEntry;
+    while(itForN != -1)
+      {
+        if(N.setData[itForN].data.m_neighborAddr == twoHopNTuple.data.m_twoHopNeighborAddr) //A-B A-C B-C
+          {
+            ok = false;
+            break;
+          }
+          itForN = N.setData[itForN].next;
+      }
+    if(ok)
+      {
+        olsrInsertToTwoHopNeighborSet(&N2,&twoHopNTuple.data);
+      }
+    itForTwoHopNeighborSet = twoHopNTuple.next;
+  }
+  uint16_t N1_len=0;
+  setIndex_t itN1 = N.fullQueueEntry;
+  while(itN1 != -1){
+    N1_len++;
+    itN1 = N.setData[itN1].next;
+  }
+  uint16_t N2_len=0;
+  setIndex_t itN2 = 0;
+  while(itN2 != -1){
+    N2_len++;
+    itN2 = N2.setData[itN2].next;
+  }
+  //2 d array 
+  contriNode contriMatrix[N2_len][N1_len];
+  float lb[N2_len];
+  int32_t lb_log[N2_len];
+  for(int i = 0; i < N2_len; i++){
+    lb[i]=1.0;
+  }
+  itN1 = N.fullQueueEntry;
+  itN2 = N2.fullQueueEntry;
+  int16_t idx_i=0;
+  int16_t idx_j=0;
+  olsrWeight_t gain = 1.2;
+  float base = 0.999;
+  while(itN1 != -1){
+    olsrWeight_t loss1 = N.setData[itN1].data.m_weight;
+    while(itN2 != -1){
+      olsrWeight_t loss2 = 1.0;
+      if(N2.setData[itN2].data.m_neighborAddr == N.setData[itN1].data.m_neighborAddr){
+        loss2 = N2.setData[itN2].data.m_weight;
+      }
+      float temp = loss1+ (1-loss1)*loss2;
+      lb[idx_j] *= temp;
+      contriMatrix[idx_j][idx_i].val = log_base(base, temp);
+      contriMatrix[idx_j][idx_i].addr = N.setData[itN1].data.m_neighborAddr;
+      idx_j++;
+      itN2 = N2.setData[itN2].next;
+    }
+    idx_j=0;
+    idx_i++;
+    itN1 = N.setData[itN1].next;
+    itN2 = N2.fullQueueEntry;
+  }
+  //calcu lb_log
+  for(int i = 0; i<N2_len; ++i){
+    lb_log[i] = log_base(base, lb[i]*gain);
+  }
+  //sort
+  int32_t cur_sum[N2_len];
+  for(int i = 0; i < N2_len;++i){
+    cur_sum[i]=0;
+  }
+  contriNode oriContriMatrix[N2_len][N1_len];
+  olsrAddr_t map[N1_len];
+  for(int i=0;i<N2_len;i++){
+    for(int j=0;j<N1_len;j++){
+      oriContriMatrix[i][j]=contriMatrix[i][j];
+      map[j]=contriMatrix[i][j].addr;
+    }
+  }
+  for(int i=0; i<N2_len;++i){
+    sort(&contriMatrix[i][0],0,N2_len-1);
+  }
+  // represent the selected mpr
+  olsrAddr_t sn1[N1_len];
+  int sn1_len=0;
+  for(int i=0; i< N1_len;++i){
+    sn1[i]=0;
+  }
+  bool flag = false;
+  for(int i = 0;i<N2_len;++i){
+    if(flag)
+      break;
+    for(int j= 0;j<N1_len;++j){
+      if(!find(sn1,contriMatrix[j][i].addr,sn1_len)){
+        sn1[sn1_len++]=contriMatrix[j][i].addr;
+        //update curSum
+        int index=findIndex(map,contriMatrix[j][i].addr,N1_len);
+        int count=0;
+        for(int k=0;k<N2_len;++k){
+          cur_sum[k]+=oriContriMatrix[k][index].val;
+          if(cur_sum[k]>=lb_log[k])
+            count++;
+        }
+        if(count==N2_len)
+        {
+          flag=true;
+          break;
+        }
+      }
+      else{
+        continue;
+      }
+    }
+  }
+  if(sn1[0]==0){    //can not find the solution,selected all
+    for(int i=0;i<N1_len;i++){
+      sn1[i]=map[i];
+    }
+  }
+  for(int i =0;i<N1_len;++i){
+    if(sn1[i]!=0){
+      //insert into mpr
+      olsrMprTuple_t tmp;
+      tmp.m_addr=sn1[i];
+      olsrInsertToMprSet(&olsrMprSet,&tmp);
+    }
+  }
+}
+#else
 void mprCompute()
 {
   olsrMprSetInit(&olsrMprSet);
@@ -796,6 +1010,7 @@ void mprCompute()
     }
 
 }
+#endif
 static void olsrSetExpire()
 {
   olsrLinkTupleClearExpire();//

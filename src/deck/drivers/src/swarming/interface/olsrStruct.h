@@ -7,6 +7,7 @@
 #include <string.h>
 #include "mac.h"
 #define USER_ROUTING
+#define EFF_BROADCASTING
 /*
 *********************Recv&SendQueue*************************
 */
@@ -57,6 +58,9 @@ typedef struct
   olsrNeighborType_t m_status;
   bool m_isAdvertised;
   olsrWillingness_t m_willingness;
+  #ifdef EFF_BROADCASTING
+  olsrWeight_t m_weight;
+  #endif
 } olsrNeighborTuple_t;
 
 typedef struct 
