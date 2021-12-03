@@ -370,6 +370,9 @@ static void linkTupleAdded(olsrLinkTuple_t *tuple,uint8_t willingness)
   nbTuple.m_neighborAddr = tuple->m_neighborAddr;
   nbTuple.m_willingness = willingness;
   olsrTime_t now = xTaskGetTickCount();
+  #ifdef EFF_BROADCASTING
+  nbTuple.m_weight = distanceToWeight(getDistanceFromAddr(tuple->m_neighborAddr));
+  #endif
   if(tuple->m_symTime >= now)
     {
       nbTuple.m_status = STATUS_SYM;
