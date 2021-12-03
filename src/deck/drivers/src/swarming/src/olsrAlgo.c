@@ -322,7 +322,7 @@ float distanceToPacketLoss(int16_t distance)
 
 olsrWeight_t distanceToWeight(int16_t distance)
 {
-  return 1-distanceToPacketLoss(distance);
+  return distanceToPacketLoss(distance);
 }
 
 int16_t getDistanceFromAddr(olsrAddr_t addr)
