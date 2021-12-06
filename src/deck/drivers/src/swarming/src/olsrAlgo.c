@@ -16,6 +16,8 @@
 #include "math.h"
 
 #define ANTENNA_OFFSET 154.0   // In meter
+#define MAX(a,b) ((a>b)?a:b)
+#define MIN(a,b) ((a<b)?a:b)
 //const
 const int antennaDelay = (ANTENNA_OFFSET * 499.2e6 * 128) / 299792458.0; // In radio tick
 
@@ -770,7 +772,7 @@ void mprCompute(){
   }
   //calcu lb_log
   for(int i = 0; i<N2_len; ++i){
-    lb_log[i] = log_base(base, lb[i]*gain);
+    lb_log[i] = log_base(base, MIN(lb[i]*gain,0.999));
   }
   //sort
   int32_t cur_sum[N2_len];
@@ -831,8 +833,10 @@ void mprCompute(){
       olsrMprTuple_t tmp;
       tmp.m_addr=sn1[i];
       olsrInsertToMprSet(&olsrMprSet,&tmp);
+      DEBUG_PRINT_OLSR_MPR("Mpr addr %d\n",tmp.m_addr);
     }
   }
+ 
 }
 #else
 void mprCompute()
