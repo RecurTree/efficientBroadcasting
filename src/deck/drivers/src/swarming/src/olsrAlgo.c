@@ -668,6 +668,7 @@ void sort(contriNode * nodes,int ol, int rr){
 
 
 void mprCompute(){
+  DEBUG_PRINT_OLSR_MPR("Mpr computing!\n");
   olsrMprSetInit(&olsrMprSet);
   olsrNeighborSet_t N;
   olsrNeighborSetInit(&N);
