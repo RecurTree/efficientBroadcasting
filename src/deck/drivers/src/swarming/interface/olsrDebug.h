@@ -23,24 +23,24 @@
  * There debug printing can be switched on or off by #define DEBUG_OLSR_XXXXX
  */
 
-//#define DEBUG_OLSR_SYSTEM
-//#define DEBUG_OLSR_SEND
-//#define DEBUG_OLSR_RECEIVE
+// #define DEBUG_OLSR_SYSTEM
+// #define DEBUG_OLSR_SEND
+// #define DEBUG_OLSR_RECEIVE
 // #define DEBUG_OLSR_HELLO
 // #define DEBUG_OLSR_TC
 // #define DEBUG_OLSR_TS
 // #define DEBUG_OLSR_LINK
 #define DEBUG_OLSR_MPR
-// #define DEBUG_OLSR_MS
+#define DEBUG_OLSR_MS
 #define DEBUG_OLSR_NEIGHBOR
 #define DEBUG_OLSR_NEIGHBOR2
 // #define DEBUG_OLSR_DUPLICATE
 // #define DEBUG_OLSR_TOPOLOGY
-//#define DEBUG_OLSR_ROUTING
+// #define DEBUG_OLSR_ROUTING
 // #define DEBUG_OLSR_SET
 // #define DEBUG_OLSR_FORWARD
-//#define DEBUG_OLSR_APP
-//#define DEBUG_OLSR_SIM
+// #define DEBUG_OLSR_APP
+// #define DEBUG_OLSR_SIM
 
 #ifdef DEBUG_OLSR_SYSTEM
 #define DEBUG_PRINT_OLSR_SYSTEM(fmt, ...) DEBUG_PRINT("SYSTEM: "fmt,  ##__VA_ARGS__)

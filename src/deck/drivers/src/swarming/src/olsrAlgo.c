@@ -316,7 +316,7 @@ float distanceToPacketLoss(int16_t distance)
 {
   if(distance<=0) return 0;
   if(distance>=1000) return 1;
-  if(distance>=100) return 0.5;
+  //if(distance>=100) return 0.5;
   float res = 1.0;
   
   return res*distance/1000;
@@ -552,6 +552,10 @@ void populateTwoHopNeighborSet(const olsrMessage_t* helloMsg)
                     olsrTwoHopNeighborSet.setData[twoHopNeighborTuple].data.m_weight = \
                   n1Weight*helloMsgBody->m_linkMessage[i].m_weight;
                   #endif
+                  #ifdef EFF_BROADCASTING
+                  olsrTwoHopNeighborSet.setData[twoHopNeighborTuple].data.m_weight = \
+                  helloMsgBody->m_linkMessage[i].m_weight;
+                  #endif
                 }
               else
                 {
@@ -562,6 +566,9 @@ void populateTwoHopNeighborSet(const olsrMessage_t* helloMsg)
                   #ifdef USER_ROUTING 
                   //newTuple.m_weight=(1-distanceToPacketLoss(getDistanceFromAddr(sender)))*helloMsgBody->m_linkMessage[i].m_weight;
                    newTuple.m_weight = n1Weight*helloMsgBody->m_linkMessage[i].m_weight;
+                  #endif
+                  #ifdef EFF_BROADCASTING
+                  newTuple.m_weight = helloMsgBody->m_linkMessage[i].m_weight;
                   #endif
                   addTwoHopNeighborTuple(&newTuple);
                 }
@@ -668,65 +675,72 @@ void sort(contriNode * nodes,int ol, int rr){
 
 
 void mprCompute(){
-  DEBUG_PRINT_OLSR_MPR("Mpr computing!\n");
   olsrMprSetInit(&olsrMprSet);
   olsrNeighborSet_t N;
   olsrNeighborSetInit(&N);
-  //generate 1 hop neighbor
-  setIndex_t itForOlsrNeighborSet  = olsrNeighborSet.fullQueueEntry;
-  while(itForOlsrNeighborSet!=-1){
-    if(olsrNeighborSet.setData[itForOlsrNeighborSet].data.m_status == STATUS_SYM){
-      olsrInsertToNeighborSet(&N,&olsrNeighborSet.setData[itForOlsrNeighborSet].data);
+
+  setIndex_t itForOlsrNeighborSet = olsrNeighborSet.fullQueueEntry;
+  while(itForOlsrNeighborSet != -1)
+    {
+      if(olsrNeighborSet.setData[itForOlsrNeighborSet].data.m_status == STATUS_SYM)
+        {
+          olsrInsertToNeighborSet(&N,&olsrNeighborSet.setData[itForOlsrNeighborSet].data);
+        }
+      itForOlsrNeighborSet = olsrNeighborSet.setData[itForOlsrNeighborSet].next;
     }
-    itForOlsrNeighborSet = olsrNeighborSet.setData[itForOlsrNeighborSet].next;
-  }
-  //generate for n2 neighbor,consider triangle case
+  
   olsrTwoHopNeighborSet_t N2;
   olsrTwoHopNeighborSetInit(&N2);
+
   setIndex_t itForTwoHopNeighborSet = olsrTwoHopNeighborSet.fullQueueEntry;
-  while(itForOlsrNeighborSet != -1){
-    olsrTwoHopNeighborSetItem_t twoHopNTuple = olsrTwoHopNeighborSet.setData[itForTwoHopNeighborSet];
-    //self can not consider as self
-    if(twoHopNTuple.data.m_twoHopNeighborAddr == myAddress)
-      {
-        itForTwoHopNeighborSet = twoHopNTuple.next;
-        continue;
-      }
-    bool ok = false;
-    setIndex_t itForN = N.fullQueueEntry;
-    while(itForN != -1)
-      {
-        if(N.setData[itForN].data.m_neighborAddr == twoHopNTuple.data.m_neighborAddr)
-          {
-            // N.setData[itForN].data.m_willingness == WILL_NEVER? ok=false: ok=true;
-            ok = true;
-            break;
-          }
-        itForN = N.setData[itForN].next;
-      }
-    if(!ok)
-      {
-        itForTwoHopNeighborSet = twoHopNTuple.next;
-        DEBUG_PRINT_OLSR_MPR("464 continue\n");
-        continue;
-      }
-    //this two hop neighbor can not be one hop neighbor
-    itForN = N.fullQueueEntry;
-    while(itForN != -1)
-      {
-        if(N.setData[itForN].data.m_neighborAddr == twoHopNTuple.data.m_twoHopNeighborAddr) //A-B A-C B-C
-          {
-            ok = false;
-            break;
-          }
+  while(itForTwoHopNeighborSet != -1)
+    {
+      olsrTwoHopNeighborSetItem_t twoHopNTuple = olsrTwoHopNeighborSet.setData[itForTwoHopNeighborSet];
+      //two hop neighbor can not equal to myself
+      //TODO bianli fangshi check
+      if(twoHopNTuple.data.m_twoHopNeighborAddr == myAddress)
+        {
+          itForTwoHopNeighborSet = twoHopNTuple.next;
+          continue;
+        }
+      
+      bool ok = false;
+      setIndex_t itForN = N.fullQueueEntry;
+      while(itForN != -1)
+        {
+          if(N.setData[itForN].data.m_neighborAddr == twoHopNTuple.data.m_neighborAddr)
+            {
+              // N.setData[itForN].data.m_willingness == WILL_NEVER? ok=false: ok=true;
+              ok = true;
+              break;
+            }
           itForN = N.setData[itForN].next;
-      }
-    if(ok)
-      {
-        olsrInsertToTwoHopNeighborSet(&N2,&twoHopNTuple.data);
-      }
-    itForTwoHopNeighborSet = twoHopNTuple.next;
-  }
+        }
+      if(!ok)
+        {
+          itForTwoHopNeighborSet = twoHopNTuple.next;
+          DEBUG_PRINT_OLSR_MPR("464 continue\n");
+          continue;
+        }
+      //this two hop neighbor can not be one hop neighbor
+      itForN = N.fullQueueEntry;
+      while(itForN != -1)
+        {
+          if(N.setData[itForN].data.m_neighborAddr == twoHopNTuple.data.m_twoHopNeighborAddr) //A-B A-C B-C
+            {
+              ok = false;
+              break;
+            }
+            itForN = N.setData[itForN].next;
+        }
+
+      if(ok)
+        {
+          olsrInsertToTwoHopNeighborSet(&N2,&twoHopNTuple.data);
+        }
+
+      itForTwoHopNeighborSet = twoHopNTuple.next;
+    }
   uint16_t N1_len=0;
   setIndex_t itN1 = N.fullQueueEntry;
   while(itN1 != -1){
@@ -734,11 +748,15 @@ void mprCompute(){
     itN1 = N.setData[itN1].next;
   }
   uint16_t N2_len=0;
-  setIndex_t itN2 = 0;
+  setIndex_t itN2 = N2.fullQueueEntry;
   while(itN2 != -1){
     N2_len++;
     itN2 = N2.setData[itN2].next;
   }
+  if(N1_len==0||N2_len==0){
+    return ;
+  } 
+      
   //2 d array 
   contriNode contriMatrix[N2_len][N1_len];
   float lb[N2_len];
@@ -789,19 +807,20 @@ void mprCompute(){
     }
   }
   for(int i=0; i<N2_len;++i){
-    sort(&contriMatrix[i][0],0,N2_len-1);
+    sort(&contriMatrix[i][0],0,N1_len-1);
   }
   // represent the selected mpr
   olsrAddr_t sn1[N1_len];
   int sn1_len=0;
   for(int i=0; i< N1_len;++i){
-    sn1[i]=0;
+    sn1[i]=1000;       
   }
   bool flag = false;
-  for(int i = 0;i<N2_len;++i){
+  
+  for(int i = 0;i<N1_len;++i){
     if(flag)
       break;
-    for(int j= 0;j<N1_len;++j){
+    for(int j= 0;j<N2_len;++j){
       if(!find(sn1,contriMatrix[j][i].addr,sn1_len)){
         sn1[sn1_len++]=contriMatrix[j][i].addr;
         //update curSum
@@ -823,13 +842,13 @@ void mprCompute(){
       }
     }
   }
-  if(sn1[0]==0){    //can not find the solution,selected all
+  if(sn1[0]==1000){    //can not find the solution,selected all,this can be remove for sn1 selected all already(maybe)
     for(int i=0;i<N1_len;i++){
       sn1[i]=map[i];
     }
   }
   for(int i =0;i<N1_len;++i){
-    if(sn1[i]!=0){
+    if(sn1[i]!=1000){
       //insert into mpr
       olsrMprTuple_t tmp;
       tmp.m_addr=sn1[i];

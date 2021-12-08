@@ -32,9 +32,11 @@ void initSimTopology()
     {
         hashTable[i] = -1;
     }
-    hashTable[9] = 0;
-    hashTable[5] = 1;
-    hashTable[21] = 2;
+    hashTable[0] = 0;
+    hashTable[1] = 1;
+    hashTable[2] = 2;
+    hashTable[3] = 3;
+    hashTable[4] = 4;
 }
 
 bool checkItCanReceive(olsrAddr_t from,olsrAddr_t to)

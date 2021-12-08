@@ -5,6 +5,10 @@
         "**/bower_components": true
     },
     "files.associations": {
-        "adhoconboardsim.h": "c"
+        "adhoconboardsim.h": "c",
+        "*.tcc": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "string_view": "c"
     }
 }
