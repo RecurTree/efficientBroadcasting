@@ -660,8 +660,8 @@ void sort(contriNode * nodes,int ol, int rr){
     return;
   contriNode temp = nodes[ol];
   while(l<r){
-    while(nodes[r].val>=temp.val&&r>l) r--;
-    while(nodes[l].val<=temp.val&&r>l) l++;
+    while(nodes[r].val<=temp.val&&r>l) r--;
+    while(nodes[l].val>=temp.val&&r>l) l++;
     contriNode cur = nodes[r];
     nodes[r] = nodes[l];
     nodes[l] = cur;
@@ -781,9 +781,11 @@ void mprCompute(){
       lb[idx_j] *= temp;
       contriMatrix[idx_j][idx_i].val = log_base(base, temp);
       contriMatrix[idx_j][idx_i].addr = N.setData[itN1].data.m_neighborAddr;
+      DEBUG_PRINT_OLSR_MPR("cmatrix[%d][%d]={%d,%d},",idx_j,idx_i,contriMatrix[idx_j][idx_i].val,contriMatrix[idx_j][idx_i].addr);
       idx_j++;
       itN2 = N2.setData[itN2].next;
     }
+    DEBUG_PRINT_OLSR_MPR("\n");
     idx_j=0;
     idx_i++;
     itN1 = N.setData[itN1].next;
@@ -809,6 +811,16 @@ void mprCompute(){
   for(int i=0; i<N2_len;++i){
     sort(&contriMatrix[i][0],0,N1_len-1);
   }
+  DEBUG_PRINT_OLSR_MPR("After sorted\n");
+  for(int i = 0;i < N2_len; ++i)
+  {
+    for(int j = 0; j< N1_len; ++j)
+    {
+      DEBUG_PRINT_OLSR_MPR("cmatrix[%d][%d]={%d,%d},",i,j,contriMatrix[i][j].val,contriMatrix[i][j].addr);
+    }
+    DEBUG_PRINT_OLSR_MPR("\n");
+}
+    
   // represent the selected mpr
   olsrAddr_t sn1[N1_len];
   int sn1_len=0;
@@ -1664,7 +1676,7 @@ void olsrPacketDispatch(const packetWithTimestamp_t * rxPacketWts)
       index += messageHeader->m_messageSize;
       message += messageHeader->m_messageSize;
     }
-    olsrRoutingTableComputation();
+    olsrRoutingTableComputation();     
 	  // olsrRoutingTableComputation2();
   	xSemaphoreGive(olsrAllSetLock);
     

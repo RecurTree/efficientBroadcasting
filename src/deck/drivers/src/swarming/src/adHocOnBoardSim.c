@@ -10,20 +10,24 @@
         --8-(1)-12-(1)-17-(1)-27-(8)-29--
 */
 
-#define USE_NUM 5
+#define USE_NUM 6
 #define MAX_CF_NUM 40
 
 
-static bool adjMatrices[USE_NUM][USE_NUM] = {{0,1,0,0,1},\
-                                             {1,0,1,0,0},\
-                                            {0,1,0,1,0},\
-                                             {0,0,1,0,1},\
-                                             {1,0,0,1,0}}; 
-static int16_t distanceMatrices[USE_NUM][USE_NUM] =  {{0,100,700,1200,800},\
-                                                      {100,0,100,0,0},\
-                                                      {700,100,0,100,0},\
-                                                      {1200,0,100,0,800},\
-                                                      {800,0,0,800,0}};
+static bool adjMatrices[USE_NUM][USE_NUM] = {{0,1,1,1,0,0},\
+                                             {1,0,0,0,1,1},\
+                                             {1,0,0,0,1,0},\
+                                             {1,0,0,0,0,1},\
+                                             {0,1,1,0,0,0},\
+                                             {0,1,0,1,0,0},\
+                                             }; 
+static int16_t distanceMatrices[USE_NUM][USE_NUM] =  {{0,700,300,400,0,0},\
+                                                      {700,0,0,0,600,800},\
+                                                      {300,0,0,0,200,0},\
+                                                      {400,0,0,0,0,300},\
+                                                      {0,600,800,0,0,0},\
+                                                      {0,800,0,300,0,0},\
+                                                      };
 
 short hashTable[MAX_CF_NUM];
 void initSimTopology()
@@ -37,6 +41,7 @@ void initSimTopology()
     hashTable[2] = 2;
     hashTable[3] = 3;
     hashTable[4] = 4;
+    hashTable[5] = 5;
 }
 
 bool checkItCanReceive(olsrAddr_t from,olsrAddr_t to)
