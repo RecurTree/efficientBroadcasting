@@ -756,7 +756,23 @@ void mprCompute(){
   if(N1_len==0||N2_len==0){
     return ;
   } 
-      
+  olsrAddr_t n2map[N2_len];
+  for(int i=0; i < N2_len; ++i){
+    n2map[i] = 1000;
+  }
+  //get true n2_len
+  N2_len=0;
+  itN2 = N2.fullQueueEntry;
+  while(itN2!=-1){
+    if(find(n2map,N2.setData[itN2].data.m_twoHopNeighborAddr,N2_len)){
+      itN2 = N2.setData[itN2].next;
+      continue;
+    }
+    else{
+      n2map[N2_len++]=N2.setData[itN2].data.m_twoHopNeighborAddr;
+    }
+    itN2 = N2.setData[itN2].next;
+  }
   //2 d array 
   contriNode contriMatrix[N2_len][N1_len];
   float lb[N2_len];
@@ -768,28 +784,29 @@ void mprCompute(){
   itN2 = N2.fullQueueEntry;
   int16_t idx_i=0;
   int16_t idx_j=0;
-  olsrWeight_t gain = 1.2;
+  olsrWeight_t gain = 1.5;
   float base = 0.999;
   while(itN1 != -1){
     olsrWeight_t loss1 = N.setData[itN1].data.m_weight;
-    while(itN2 != -1){
+    for(idx_j = 0; idx_j < N2_len; idx_j++){
       olsrWeight_t loss2 = 1.0;
-      if(N2.setData[itN2].data.m_neighborAddr == N.setData[itN1].data.m_neighborAddr){
-        loss2 = N2.setData[itN2].data.m_weight;
+      itN2 = N2.fullQueueEntry;
+      while(itN2!=-1){
+        if(N2.setData[itN2].data.m_twoHopNeighborAddr==n2map[idx_j]&&N2.setData[itN2].data.m_neighborAddr == N.setData[itN1].data.m_neighborAddr){
+          loss2 = N2.setData[itN2].data.m_weight;
+          break;
+        }
+        itN2 = N2.setData[itN2].next;
       }
       float temp = loss1+ (1-loss1)*loss2;
       lb[idx_j] *= temp;
       contriMatrix[idx_j][idx_i].val = log_base(base, temp);
       contriMatrix[idx_j][idx_i].addr = N.setData[itN1].data.m_neighborAddr;
       DEBUG_PRINT_OLSR_MPR("cmatrix[%d][%d]={%d,%d},",idx_j,idx_i,contriMatrix[idx_j][idx_i].val,contriMatrix[idx_j][idx_i].addr);
-      idx_j++;
-      itN2 = N2.setData[itN2].next;
     }
     DEBUG_PRINT_OLSR_MPR("\n");
-    idx_j=0;
     idx_i++;
     itN1 = N.setData[itN1].next;
-    itN2 = N2.fullQueueEntry;
   }
   //calcu lb_log
   for(int i = 0; i<N2_len; ++i){
@@ -868,7 +885,6 @@ void mprCompute(){
       DEBUG_PRINT_OLSR_MPR("Mpr addr %d\n",tmp.m_addr);
     }
   }
- 
 }
 #else
 void mprCompute()
@@ -1676,7 +1692,7 @@ void olsrPacketDispatch(const packetWithTimestamp_t * rxPacketWts)
       index += messageHeader->m_messageSize;
       message += messageHeader->m_messageSize;
     }
-    olsrRoutingTableComputation();     
+    //olsrRoutingTableComputation();     
 	  // olsrRoutingTableComputation2();
   	xSemaphoreGive(olsrAllSetLock);
     

@@ -540,6 +540,11 @@ setIndex_t olsrFindTwoHopNeighborTuple(olsrTwoHopNeighborSet_t *twoHopNeighborSe
   return candidate;
 }
 
+bool olsrIsInTwoHopNeighbor(olsrTwoHopNeighborSet_t *twoHopNeighborSet,\
+                                       olsrAddr_t neighborAddr,\
+                                       olsrAddr_t twoHopNeighborAddr){
+
+}
 
 setIndex_t olsrInsertToTwoHopNeighborSet(olsrTwoHopNeighborSet_t *twoHopNeighborSet,\
                                          const olsrTwoHopNeighborTuple_t* tuple)
