@@ -41,6 +41,7 @@
 // #define DEBUG_OLSR_FORWARD
 // #define DEBUG_OLSR_APP
 // #define DEBUG_OLSR_SIM
+#define DEBUG_OLSR_NS
 
 #ifdef DEBUG_OLSR_SYSTEM
 #define DEBUG_PRINT_OLSR_SYSTEM(fmt, ...) DEBUG_PRINT("SYSTEM: "fmt,  ##__VA_ARGS__)
@@ -131,6 +132,12 @@
 #define DEBUG_PRINT_OLSR_TOPOLOGY(fmt, ...) DEBUG_PRINT("TOPOLOGY: "fmt,  ##__VA_ARGS__)
 #else
 #define DEBUG_PRINT_OLSR_TOPOLOGY(fmt, ...)
+#endif
+
+#ifdef DEBUG_OLSR_NS
+#define DEBUG_PRINT_OLSR_NS(fmt, ...) DEBUG_PRINT("NodeState: "fmt,  ##__VA_ARGS__)
+#else
+#define DEBUG_PRINT_OLSR_NS(fmt, ...)
 #endif
 
 #ifdef DEBUG_OLSR_ROUTING

@@ -7,6 +7,7 @@
 #define OLSR_HELLO_INTERVAL 2000
 #define OLSR_NEIGHB_HOLD_TIME (3*OLSR_HELLO_INTERVAL)
 #define OLSR_TC_INTERVAL 5000
+#define OLSR_NS_INTERVAL 1000
 #define TS_INTERVAL 20 //must be in range: 20 - 500
 #define TS_INTERVAL_MIN 20 //default 20
 #define TS_INTERVAL_MAX 500 //default 500
@@ -53,6 +54,7 @@ void olsrSendTask(void *ptr);
 void olsrRecvTask(void *ptr);
 void olsrTcTask(void *ptr);
 void olsrTsTask(void *ptr);
+void olsrNsTask(void *ptr);
 void olsrDeviceInit(dwDevice_t *dev);
 void olsrRxCallback(dwDevice_t *dev);
 void olsrTxCallback(dwDevice_t *dev);
@@ -64,6 +66,7 @@ void olsrTopologyTupleTimerExpireTask(void *ptr);
 void olsrPacketLossTask(void *ptr);
 void olsrPacketLossCallBack(dwDevice_t *dev);
 void olsrSendData(olsrAddr_t sourceAddr,AdHocPort sourcePort,olsrAddr_t destAddr, AdHocPort destPort,uint16_t portSeq, uint8_t data[],uint8_t length);
+
 olsrWeight_t distanceToWeight(int16_t distance);
 int16_t getDistanceFromAddr(olsrAddr_t addr);
 #endif //__OLSR_ALGO_H__

@@ -35,6 +35,7 @@ typedef float olsrWeight_t;
 #define MPR_SELECTOR_SET_SIZE NEIGHBOR_SET_SIZE
 #define TWO_HOP_NEIGHBOR_SET_SIZE 30
 #define ROUTING_SET_SIZE 30
+#define NS_SET_SIZE 20
 
 SemaphoreHandle_t olsrNeighborSetLock;
 typedef enum
@@ -228,6 +229,32 @@ typedef struct {
   olsrTimestampTuple_t ots;
 }packetWithTimestamp_t;
 
+
+
+
+/*
+*********************NsTable*************************
+*/
+typedef struct {
+  olsrAddr_t addr;
+  float veloctiy_x;
+  float veloctiy_y;
+  float position_x;
+  float position_y;
+} olsrNodeStateTuple_t;
+
+
+typedef struct {
+  olsrNodeStateTuple_t data;
+  setIndex_t next;
+} olsrNsSetItem_t;
+
+typedef struct
+{
+  olsrNsSetItem_t setData[NS_SET_SIZE];
+  setIndex_t freeQueueEntry;
+  setIndex_t fullQueueEntry;
+} olsrNsSet_t;
 /*
 *********************RoutingTable*************************
 */
@@ -327,6 +354,7 @@ typedef struct
 } olsrRangingTable_t;
 
 
+
 olsrTopologySet_t olsrTopologySet;
 
 olsrNeighborSet_t olsrNeighborSet;
@@ -345,6 +373,7 @@ olsrRoutingSet_t olsrRoutingSet;
 
 olsrRangingTable_t olsrRangingTable;
 
+olsrNsSet_t olsrNsSet;
 /*linkSet*/
 setIndex_t olsrInsertToLinkSet(olsrLinkSet_t *linkSet, const olsrLinkTuple_t *item);
 
@@ -415,6 +444,18 @@ setIndex_t olsrFindInDuplicateSet(olsrDuplicateSet_t *duplicateSet,\
 void olsrDelTopologyTupleByPos(setIndex_t pos);
 
 void olsrPrintTopologySet(olsrTopologySet_t *topologyset);
+
+
+
+/*nsSet */
+setIndex_t olsrInsertNsSet(olsrNsSet_t *nsSet,\
+                              const olsrNodeStateTuple_t  *nsTuple);
+setIndex_t olsrFindNsTupleByAddr(olsrNsSet_t *nsSet,\
+                                 olsrAddr_t addr);
+void olsrPrintNsSet(olsrNsSet_t *topologyset);
+
+
+
 
 /*mpr*/
 void olsrMprSetInit(olsrMprSet_t *mprSet);

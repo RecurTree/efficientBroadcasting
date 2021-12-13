@@ -81,6 +81,25 @@
       :                                                               :
       :                                                               :
                (etc.)
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |  Message Type |     Vtime     |         Message Size          |//NS_MESSAGE
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |          Address1             |         Address2              |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |          Address3             |         RESERVED              |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |  Time To Live |   Hop Count   |    Message Sequence Number    |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |              ANSN             |           Reserved            |//NS
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                             Velocity_x                        |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                             Velocity_y                        |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                             Position_x                        |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                             Position_y                        |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
 
 #define PACKET_MAX_LENGTH 125 //got this value by testing
@@ -110,6 +129,7 @@ typedef enum{
     TC_MESSAGE = 2,
     DATA_MESSAGE = 3,
     TS_MESSAGE= 4,
+    NS_MESSAGE = 5,
 } olsrMessageType_t;
 //1
 typedef struct{
@@ -185,6 +205,22 @@ typedef struct{
     olsrDataMessageHeader_t  m_dataHeader;
     uint8_t m_payload[DATA_PAYLOAD_MAX_NUM];
 } __attribute__((packed)) olsrDataMessage_t;
+
+
+#ifdef  EFF_BROADCASTING
+typedef struct 
+{
+    float velocity_x;
+    float veloctty_y;
+    float position_x;
+    float position_y;
+} __attribute__((packed)) olsrNodeStateMessageUint_t;
+typedef struct 
+{
+  uint16_t m_ansn;
+  olsrNodeStateMessageUint_t m_content;
+} __attribute__((packed)) olsrNodeStateMessage_t;
+#endif
 
 //time stamp (ts) message
 typedef struct {

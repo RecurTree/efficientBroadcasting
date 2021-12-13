@@ -836,7 +836,7 @@ void mprCompute(){
       DEBUG_PRINT_OLSR_MPR("cmatrix[%d][%d]={%d,%d},",i,j,contriMatrix[i][j].val,contriMatrix[i][j].addr);
     }
     DEBUG_PRINT_OLSR_MPR("\n");
-}
+  }
     
   // represent the selected mpr
   olsrAddr_t sn1[N1_len];
@@ -1082,6 +1082,7 @@ void olsrPrintAll()
   olsrPrintTopologySet(&olsrTopologySet);
   olsrPrintMprSelectorSet(&olsrMprSelectorSet);
   olsrPrintRoutingSet(&olsrRoutingSet);
+  olsrPrintNsSet(&olsrNsSet);
   // olsrPrintDuplicateSet(&olsrDuplicateSet);
 }
 void olsrProcessHello(const olsrMessage_t* helloMsg)
@@ -1142,6 +1143,31 @@ void olsrProcessTc(const olsrMessage_t* tcMsg)
     }
 }
 
+void olsrProcessNs(const olsrMessage_t* nsMsg){
+
+  olsrTime_t now = xTaskGetTickCount();
+  olsrAddr_t originator = nsMsg->m_messageHeader.m_originatorAddress;
+  olsrAddr_t sender = nsMsg->m_messageHeader.m_relayAddress;
+  olsrNodeStateMessage_t* nsBody = (olsrNodeStateMessage_t *)nsMsg->m_messagePayload;
+  uint16_t ansn = nsBody->m_ansn;
+  setIndex_t res = olsrFindNsTupleByAddr(&olsrNsSet,originator);
+  if(res==-1){
+    olsrNodeStateTuple_t nsTuple;
+    nsTuple.addr = originator;
+    nsTuple.position_x = nsBody->m_content.position_x;
+    nsTuple.position_y = nsBody->m_content.position_y;
+    nsTuple.veloctiy_x = nsBody->m_content.velocity_x;
+    nsTuple.veloctiy_y = nsBody->m_content.veloctty_y;
+    olsrInsertNsSet(&olsrNsSet,&nsTuple);
+  }
+  else{
+    olsrNsSet.setData[res].data.addr = originator;
+    olsrNsSet.setData[res].data.position_x = nsBody->m_content.position_x;
+    olsrNsSet.setData[res].data.position_y = nsBody->m_content.position_y;
+    olsrNsSet.setData[res].data.veloctiy_x = nsBody->m_content.velocity_x;
+    olsrNsSet.setData[res].data.veloctiy_y = nsBody->m_content.veloctty_y;
+  }
+}
 void olsrProcessData(olsrMessage_t* msg)
 {
   olsrDataMessage_t* dataMsg = (olsrDataMessage_t *)msg->m_messagePayload;
@@ -1671,6 +1697,8 @@ void olsrPacketDispatch(const packetWithTimestamp_t * rxPacketWts)
                 DEBUG_PRINT_OLSR_RECEIVE("TS_MESSAGE\n");
                 olsrProcessTs((olsrMessage_t*)message, rx_otimestamp);
                 break;
+            case NS_MESSAGE:
+                olsrProcessNs((olsrMessage_t*)message);
             default:
                 DEBUG_PRINT_OLSR_RECEIVE("WRONG MESSAGE\n");
                 break;
@@ -1683,7 +1711,7 @@ void olsrPacketDispatch(const packetWithTimestamp_t * rxPacketWts)
 
       if(doForward)
         {
-          if(type == TC_MESSAGE)
+          if(type == TC_MESSAGE || type == NS_MESSAGE)
             {
               forwardDefault((olsrMessage_t *)message,duplicated);
             }
@@ -1840,6 +1868,31 @@ void olsrSendTc()
     }
   memcpy(msg.m_messagePayload,&tcMsg,2+pos*sizeof(olsrTopologyMessageUint_t));
   msg.m_messageHeader.m_messageSize+=(2+pos*sizeof(olsrTopologyMessageUint_t));
+  xQueueSend(g_olsrSendQueue,&msg,portMAX_DELAY);
+}
+
+void olsrSendNs()
+{
+  olsrMessage_t msg;
+  msg.m_messageHeader.m_messageType = NS_MESSAGE;
+  msg.m_messageHeader.m_vTime = OLSR_TOP_HOLD_TIME;
+  msg.m_messageHeader.m_messageSize = sizeof(olsrMessageHeader_t);
+  msg.m_messageHeader.m_originatorAddress = myAddress;
+  msg.m_messageHeader.m_destinationAddress = 0;
+  msg.m_messageHeader.m_relayAddress = myAddress;  
+  msg.m_messageHeader.m_timeToLive = 0xff;
+  msg.m_messageHeader.m_hopCount = 0;
+  msg.m_messageHeader.m_messageSeq = getMessageSeqNumber();
+
+  olsrNodeStateMessage_t nsMsg;
+  nsMsg.m_ansn = getAnsn();
+  nsMsg.m_content.velocity_x = logGetFloat(logGetVarId("stateEstimate", "vx"));
+  nsMsg.m_content.veloctty_y = logGetFloat(logGetVarId("stateEstimate", "vy"));
+  nsMsg.m_content.position_x = logGetFloat(logGetVarId("stateEstimate", "x"));
+  nsMsg.m_content.position_y = logGetFloat(logGetVarId("stateEstimate", "y"));
+
+  memcpy(msg.m_messagePayload,&nsMsg,sizeof(olsrNodeStateMessage_t));
+  msg.m_messageHeader.m_messageSize+=sizeof(olsrNodeStateMessage_t);
   xQueueSend(g_olsrSendQueue,&msg,portMAX_DELAY);
 }
 
@@ -2091,6 +2144,17 @@ void olsrTcTask(void *ptr)
 }
 
 
+void olsrNsTask(void *ptr)
+{
+  while(true)
+  {
+    xSemaphoreTake(olsrAllSetLock,portMAX_DELAY);
+    olsrSendNs();
+    xSemaphoreGive(olsrAllSetLock);
+    vTaskDelay(M2T(OLSR_NS_INTERVAL));
+  }
+}
+
 // void olsrSendTask(void *ptr)
 // {
 //   packet_t txPacket = {0};
@@ -2152,6 +2216,8 @@ void olsrTsTask(void *ptr) {
     vTaskDelay(nextSendTime - currentTime);
   }
 }
+
+
 
 void olsrSendTask(void *ptr) {
   bool hasOlsrMessageCache = false;

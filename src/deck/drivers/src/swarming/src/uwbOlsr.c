@@ -60,6 +60,18 @@ static void olsrTsTaskInit()
       DEBUG_PRINT_OLSR_SYSTEM("TS TASK CREATE FAILD\n");
     }
 }
+static void olsrNsTaskInit()
+{
+  DEBUG_PRINT_OLSR_SYSTEM("START_OLSR_NS_TASK_INIT\n");
+  if(xTaskCreate(olsrNsTask, "OLSR_NS", configMINIMAL_STACK_SIZE, NULL,LPS_DECK_TASK_PRI, NULL)==pdPASS)
+    {
+      DEBUG_PRINT_OLSR_SYSTEM("NS TASK CREATE SUCCESSFUL\n");
+    }
+  else
+    {
+      DEBUG_PRINT_OLSR_SYSTEM("NS TASK CREATE FAILD\n");
+    }
+}
 static void olsrSendTaskInit(dwDevice_t *dev)
 {
   DEBUG_PRINT_OLSR_SYSTEM("START_OLSR_SEND_TASK_INIT\n");
@@ -117,6 +129,7 @@ static void olsrTaskInit(dwDevice_t *dev)
     olsrTsTaskInit();
     olsrSendTaskInit(dev);
     olsrRecvTaskInit(dev);
+    olsrNsTaskInit(dev);
 //    olsrAppTaskInit();
     initSimTopology();
 }

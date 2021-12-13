@@ -49,6 +49,24 @@ static setIndex_t olsrTopologySetMalloc(olsrTopologySet_t *topologySet)
       return candidate;
     }
 }
+static setIndex_t olsrNsSetMalloc(olsrNsSet_t *nsSet)
+{
+  if(nsSet->freeQueueEntry==-1)
+    {
+      DEBUG_PRINT_OLSR_SET("Full of sets!!!! can not malloc!!!\n");
+      return -1;
+    }
+  else
+    { 
+      setIndex_t candidate = nsSet->freeQueueEntry;
+      nsSet->freeQueueEntry = nsSet->setData[candidate].next;
+      //insert to full queue
+      setIndex_t tmp = nsSet->fullQueueEntry;
+      nsSet->fullQueueEntry = candidate;
+      nsSet->setData[candidate].next = tmp;
+      return candidate;
+    }
+}
 
 static bool olsrTopologySetFree(olsrTopologySet_t *topologySet,\
                                 setIndex_t delItem)
@@ -93,6 +111,21 @@ setIndex_t olsrInsertToTopologySet(olsrTopologySet_t *topologySet,\
   else
     {
       DEBUG_PRINT_OLSR_TC("bad alloc in function[olsrInsertToTopologySet]\n");
+    }
+  return candidate;
+}
+
+setIndex_t olsrInsertNsSet(olsrNsSet_t *nsSet,\
+                             const olsrNodeStateTuple_t *nsTuple)
+{
+  setIndex_t candidate = olsrNsSetMalloc(nsSet); 
+  if(candidate != -1)
+    {
+      memcpy(&nsSet->setData[candidate].data,nsTuple,sizeof(nsTuple));
+    }
+  else
+    {
+      DEBUG_PRINT_OLSR_TC("bad alloc in function[olsrInsertNsSet]\n");
     }
   return candidate;
 }
@@ -156,6 +189,25 @@ setIndex_t olsrFindTopologyTuple(olsrTopologySet_t *topologyset,\
   return candidate;
 }
 
+setIndex_t olsrFindNsTupleByAddr(olsrNsSet_t *nsset,\
+                                 olsrAddr_t addr)
+{
+  setIndex_t candidate = nsset->fullQueueEntry;
+  while(candidate != -1)
+    {
+      olsrNsSetItem_t item = nsset->setData[candidate];
+      if(item.data.addr == addr )
+        {
+          break;
+        }
+      candidate = item.next;
+    }
+  return candidate;
+}
+
+
+
+
 void olsrPrintTopologySet(olsrTopologySet_t *topologyset)
 {
   setIndex_t candidate = topologyset->fullQueueEntry;
@@ -163,6 +215,16 @@ void olsrPrintTopologySet(olsrTopologySet_t *topologyset)
     {
       olsrTopologySetItem_t tmp = topologyset->setData[candidate];
       DEBUG_PRINT_OLSR_TOPOLOGY("TOPOLOGYSET: last:%d,dest:%d,weight:%f\n",tmp.data.m_lastAddr,tmp.data.m_destAddr,tmp.data.m_weight);
+      candidate = tmp.next;
+    }
+}
+void olsrPrintNsSet(olsrNsSet_t *nsset)
+{
+  setIndex_t candidate = nsset->fullQueueEntry;
+  while(candidate != -1)
+    {
+      olsrNsSetItem_t tmp = nsset->setData[candidate];
+      DEBUG_PRINT_OLSR_NS("NSSET: addr:%d,vx:%f,vy:%f,px:%f,py:%f\n",tmp.data.addr,tmp.data.veloctiy_x,tmp.data.veloctiy_y,tmp.data.position_x,tmp.data.position_y);
       candidate = tmp.next;
     }
 }
@@ -1101,6 +1163,16 @@ void olsrRangingTableInit(olsrRangingTable_t *rangingTable) {
   rangingTable->size = 0;
 }
 
+void olsrNsSetInit(olsrNsSet_t *nsSet) {
+  setIndex_t i;
+  for (i = 0; i < NS_SET_SIZE - 1; i++) {
+    nsSet->setData[i].next = i + 1;
+  }
+  nsSet->setData[i].next = -1;
+  nsSet->freeQueueEntry = 0;
+  nsSet->fullQueueEntry = -1;
+}
+
 static setIndex_t olsrRangingTableMalloc(olsrRangingTable_t *rangingTable) {
   if (rangingTable->freeQueueEntry == -1) {
     DEBUG_PRINT_OLSR_SET("Full of sets!!!! can not malloc!!!\n");
@@ -1284,5 +1356,6 @@ void olsrStructInitAll(dwDevice_t *dev)
   olsrDuplicateSetInit(&olsrDuplicateSet);
   olsrMprSelectorSetInit(&olsrMprSelectorSet);
   olsrRoutingSetInit(&olsrRoutingSet);
-  olsrRangingTableInit(&olsrRangingTable);
+  olsrRangingTableInit(&olsrRangingTable);\
+  olsrNsSetInit(&olsrNsSet);
 }
