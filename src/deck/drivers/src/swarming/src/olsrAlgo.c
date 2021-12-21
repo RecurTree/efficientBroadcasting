@@ -39,6 +39,10 @@ static uint16_t idVelocityY;
 static uint16_t idVelocityZ;
 static float velocity;
 static int16_t distanceTowards[50];
+static float PositionXTowards[10];
+static float PositionYTowards[10];
+static float VelocityXTowards[10];
+static float VelocityYTowards[10];
 int jitter = 0;
 int flag=0;
 
@@ -1167,6 +1171,10 @@ void olsrProcessNs(const olsrMessage_t* nsMsg){
     olsrNsSet.setData[res].data.veloctiy_x = nsBody->m_content.velocity_x;
     olsrNsSet.setData[res].data.veloctiy_y = nsBody->m_content.veloctty_y;
   }
+  PositionXTowards[originator] = nsBody->m_content.position_x;
+  PositionYTowards[originator] = nsBody->m_content.position_y;
+  VelocityXTowards[originator] = nsBody->m_content.velocity_x;
+  VelocityYTowards[originator] = nsBody->m_content.veloctty_y;
 }
 void olsrProcessData(olsrMessage_t* msg)
 {
@@ -2301,3 +2309,26 @@ LOG_GROUP_START(TSranging)
         LOG_ADD(LOG_INT16, error, &g_ts_receive_error_count)
         LOG_ADD(LOG_INT16, compute_error, &g_ts_compute_error )
 LOG_GROUP_STOP(TSranging)
+
+LOG_GROUP_START(NodeState)
+        LOG_ADD(LOG_FLOAT, posX0, PositionXTowards)
+        LOG_ADD(LOG_FLOAT, posX1, PositionXTowards+1)
+        LOG_ADD(LOG_FLOAT, posX2, PositionXTowards+2)
+        LOG_ADD(LOG_FLOAT, posX3, PositionXTowards+3)
+        LOG_ADD(LOG_FLOAT, posX4, PositionXTowards+4)
+        LOG_ADD(LOG_FLOAT, posY0, PositionYTowards)
+        LOG_ADD(LOG_FLOAT, posY1, PositionYTowards+1)
+        LOG_ADD(LOG_FLOAT, posY2, PositionYTowards+2)
+        LOG_ADD(LOG_FLOAT, posY3, PositionYTowards+3)
+        LOG_ADD(LOG_FLOAT, posY4, PositionYTowards+4)
+        LOG_ADD(LOG_FLOAT, vX0, VelocityXTowards)
+        LOG_ADD(LOG_FLOAT, vX1, VelocityXTowards+1)
+        LOG_ADD(LOG_FLOAT, vX2, VelocityXTowards+2)
+        LOG_ADD(LOG_FLOAT, vX3, VelocityXTowards+3)
+        LOG_ADD(LOG_FLOAT, vX4, VelocityXTowards+4)
+        LOG_ADD(LOG_FLOAT, vY0, VelocityYTowards)
+        LOG_ADD(LOG_FLOAT, vY1, VelocityYTowards+1)
+        LOG_ADD(LOG_FLOAT, vY2, VelocityYTowards+2)
+        LOG_ADD(LOG_FLOAT, vY3, VelocityYTowards+3)
+        LOG_ADD(LOG_FLOAT, vY4, VelocityYTowards+4)
+LOG_GROUP_STOP(NodeState)
